@@ -11,26 +11,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. دریافت سورس کد
+      # ۱) دریافت سورس کد
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. نصب JDK (نسخه 17 برای اندروید مناسب است)
+      # ۲) نصب JDK (اندروید نیاز به جاوا ۱۷ دارد)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3. دادن دسترسی اجرا به gradlew
-      - name: Grant execute permission for gradlew
+      # ۳) نصب Android SDK
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # ۴) اگر gradlew وجود دارد، از آن استفاده کن
+      - name: دسترسی اجرا به gradlew
+        if: ${{ hashFiles('gradlew') != '' }}
         run: chmod +x gradlew
 
-      # 4. بیلد APK (نسخه Debug)
-      - name: Build Debug APK
+      - name: بیلد با Gradle Wrapper
+        if: ${{ hashFiles('gradlew') != '' }}
         run: ./gradlew assembleDebug
 
-      # 5. آپلود خروجی APK به عنوان Artifact
+      # ۵) اگر gradlew وجود ندارد، از Gradle سیستم استفاده کن
+      - name: نصب Gradle (در صورت نبود gradlew)
+        if: ${{ hashFiles('gradlew') == '' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gradle
+
+      - name: بیلد با Gradle سیستم
+        if: ${{ hashFiles('gradlew') == '' }}
+        run: gradle assembleDebug
+
+      # ۶) آپلود خروجی APK به عنوان Artifact
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
